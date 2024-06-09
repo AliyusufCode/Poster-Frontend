@@ -1,70 +1,169 @@
-import React from 'react';
-import TextField from '@mui/material/TextField';
-import Paper from '@mui/material/Paper';
-import Button from '@mui/material/Button';
-import SimpleMDE from 'react-simplemde-editor';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import TextField from "@mui/material/TextField";
+import Paper from "@mui/material/Paper";
+import Button from "@mui/material/Button";
+import SimpleMDE from "react-simplemde-editor";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
-import 'easymde/dist/easymde.min.css';
-import styles from './AddPost.module.scss';
-
+import "easymde/dist/easymde.min.css";
+import styles from "./AddPost.module.scss";
+import axios from "../../axios";
+import { selectIsAuth } from "../../redux/slices/AuthSlice";
+import { useSelector } from "react-redux";
 export const AddPost = () => {
-  const imageUrl = '';
-  const [value, setValue] = React.useState('');
+  const isAuth = useSelector(selectIsAuth);
 
-  const handleChangeFile = () => {};
+  const [text, setText] = useState("");
+  const [title, setTitle] = useState("");
+  const [isLoading, setLoading] = useState(false);
+  const [tags, setTags] = useState([""]);
+  const [imageUrl, setImageUrl] = useState("");
+  const inputFileRef = useRef(null);
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditing = Boolean(id);
+  const handleChangeFile = async (event) => {
+    try {
+      const formData = new FormData();
+      const file = event.target.files[0];
+      formData.append("image", file);
+      const { data } = await axios.post("/upload", formData);
+      setImageUrl(data.url);
+    } catch (error) {
+      console.warn(error);
+      alert("Ошибка при загрузке файла");
+    }
+  };
 
-  const onClickRemoveImage = () => {};
-
-  const onChange = React.useCallback((value) => {
-    setValue(value);
+  const onClickRemoveImage = () => {
+    setImageUrl("");
+  };
+  const onSubmit = async () => {
+    try {
+      setLoading(true);
+      const fields = {
+        title,
+        imageUrl,
+        tags,
+        text,
+      };
+      const { data } = isEditing
+        ? await axios.patch(`/posts/${id}`, fields)
+        : await axios.post("/posts", fields);
+      const _id = isEditing ? id : data._id;
+      navigate(`/posts/${_id}`);
+    } catch (err) {
+      console.warn(err);
+      alert("Ошибка при создании статьи");
+    }
+  };
+  const onChange = useCallback((text) => {
+    setText(text);
   }, []);
-
-  const options = React.useMemo(
+  useEffect(() => {
+    if (id) {
+      axios.get(`/posts/${id}`).then(({ data }) => {
+        setTitle(data.title);
+        setText(data.text);
+        setImageUrl(data.imageUrl);
+        setTags(data.tags.join(","));
+      });
+    }
+  }, []);
+  const options = useMemo(
     () => ({
       spellChecker: false,
-      maxHeight: '400px',
+      maxHeight: "400px",
       autofocus: true,
-      placeholder: 'Введите текст...',
+      placeholder: "Введите текст...",
       status: false,
       autosave: {
         enabled: true,
         delay: 1000,
       },
     }),
-    [],
+    []
   );
 
   return (
     <Paper style={{ padding: 30 }}>
-      <Button variant="outlined" size="large">
+      <Button
+        variant="outlined"
+        onClick={() => inputFileRef.current.click()}
+        size="large"
+      >
         Загрузить превью
       </Button>
-      <input type="file" onChange={handleChangeFile} hidden />
+      <input
+        ref={inputFileRef}
+        type="file"
+        onChange={handleChangeFile}
+        hidden
+      />
       {imageUrl && (
-        <Button variant="contained" color="error" onClick={onClickRemoveImage}>
-          Удалить
-        </Button>
+        <>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={onClickRemoveImage}
+          >
+            Удалить
+          </Button>
+          <img
+            className={styles.image}
+            src={`${process.env.REACT_APP_API_URL}${imageUrl}`}
+            alt="Uploaded"
+          />
+        </>
       )}
-      {imageUrl && (
-        <img className={styles.image} src={`http://localhost:4444${imageUrl}`} alt="Uploaded" />
-      )}
+
       <br />
       <br />
       <TextField
         classes={{ root: styles.title }}
         variant="standard"
         placeholder="Заголовок статьи..."
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
         fullWidth
       />
-      <TextField classes={{ root: styles.tags }} variant="standard" placeholder="Тэги" fullWidth />
-      <SimpleMDE className={styles.editor} value={value} onChange={onChange} options={options} />
+      <TextField
+        classes={{ root: styles.tags }}
+        onChange={(e) => setTags(e.target.value)}
+        value={tags}
+        variant="standard"
+        placeholder="Тэги"
+        fullWidth
+      />
+      <SimpleMDE
+        className={styles.editor}
+        value={text}
+        onChange={onChange}
+        options={options}
+      />
       <div className={styles.buttons}>
-        <Button size="large" variant="contained">
-          Опубликовать
-        </Button>
-        <a href="/">
-          <Button size="large">Отмена</Button>
-        </a>
+        {isAuth ? (
+          <>
+            <Button size="large" onClick={() => onSubmit()} variant="contained">
+              {isEditing ? "Сохранить" : "Опубликовать"}
+            </Button>
+            <Link to="/">
+              <Button size="large">Отмена</Button>
+            </Link>
+          </>
+        ) : (
+          <Link to="/login">
+            <Button variant="contained" size="large">
+              Авторизируйтесь чтобы опубликовать пост
+            </Button>
+          </Link>
+        )}
       </div>
     </Paper>
   );

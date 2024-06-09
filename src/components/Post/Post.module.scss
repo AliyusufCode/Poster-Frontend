@@ -94,7 +94,11 @@ $blue: #4361ee;
     }
   }
 }
-
+.comment {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
 .postDetails {
   list-style: none;
   padding: 0;
@@ -113,7 +117,12 @@ $blue: #4361ee;
     }
   }
 }
-
+.span {
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  color: blue;
+}
 .skeleton {
   background-color: #fff;
   border: 1px solid #dedede;
