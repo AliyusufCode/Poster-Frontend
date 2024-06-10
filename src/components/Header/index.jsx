@@ -40,10 +40,8 @@ export const Header = () => {
               </>
             ) : (
               <>
-                <Link to="/add-post">
-                  <Button style={{ background: "gray" }} variant="contained">
-                    Написать статью
-                  </Button>
+                <Link to="/add-post" className={styles.addPost}>
+                  <Button variant="contained">Написать статью</Button>
                 </Link>
                 <Link to="/login">
                   <Button variant="outlined">Войти</Button>

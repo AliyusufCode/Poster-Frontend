@@ -25,7 +25,11 @@
     background-color: #4361ee;
   }
 }
-
+.addPost {
+  button {
+    background: rgb(136, 129, 129);
+  }
+}
 .buttons {
   button {
     margin-left: 10px;
@@ -33,5 +37,10 @@
 
   a {
     text-decoration: none;
+  }
+}
+@media screen and (min-width: 25px) and (max-width: 520px) {
+  .addPost {
+    display: none;
   }
 }
